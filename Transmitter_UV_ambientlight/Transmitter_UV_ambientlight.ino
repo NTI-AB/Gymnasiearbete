@@ -108,7 +108,7 @@ void loop() {
   
   // Switch modes every 500ms to read both sensors
   static unsigned long lastModeSwitch = 0;
-  if (currentTime - lastModeSwitch >= 500) {
+  if (currentTime - lastModeSwitch >= 750) {
     lastModeSwitch = currentTime;
     if (ltr.getMode() == LTR390_MODE_ALS) {
       ltr.setMode(LTR390_MODE_UVS);
