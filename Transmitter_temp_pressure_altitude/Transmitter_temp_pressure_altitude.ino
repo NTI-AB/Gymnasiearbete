@@ -1,5 +1,6 @@
 #include <Wire.h>
-#include <Adafruit_LTR390.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP085_U.h>
 
 #include <SPI.h>
 #include <RH_RF69.h>
@@ -13,26 +14,21 @@
 
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
-// === LTR390 SENSOR ===
-Adafruit_LTR390 ltr = Adafruit_LTR390();
+// === BMP180 SENSOR (Unified) ===
+Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
 
 void setup() {
   Serial.begin(115200); // No waiting
   pinMode(LED, OUTPUT);
 
-  // --- LTR390 INIT ---
-  if (!ltr.begin()) {
-    // Blink forever if sensor fails
+  // --- BMP INIT ---
+  if (!bmp.begin()) {
+    // Blink forever if BMP180 fails
     while (1) {
       digitalWrite(LED, HIGH); delay(200);
       digitalWrite(LED, LOW); delay(200);
     }
   }
-
-  // Configure sensor
-  ltr.setMode(LTR390_MODE_UVS);    // UV mode
-  ltr.setGain(LTR390_GAIN_3);      // Default gain
-  ltr.setResolution(LTR390_RES_18BIT); // Good resolution
 
   // --- RADIO RESET ---
   pinMode(RFM69_RST, OUTPUT);
@@ -43,6 +39,7 @@ void setup() {
 
   // --- RADIO INIT ---
   if (!rf69.init()) {
+    // Blink fast if radio fails
     while (1) {
       digitalWrite(LED, HIGH); delay(100);
       digitalWrite(LED, LOW); delay(100);
@@ -52,6 +49,7 @@ void setup() {
   rf69.setFrequency(RF69_FREQ);
   rf69.setTxPower(20, true);
 
+  // AES KEY (must match receiver)
   uint8_t key[] = {
     1,2,3,4,5,6,7,8,
     1,2,3,4,5,6,7,8
@@ -65,19 +63,35 @@ void loop() {
   delay(40);
   digitalWrite(LED, LOW);
 
-  // Read raw UVA and ALS values
-  uint32_t uvs = ltr.readUVS();
-  uint32_t als = ltr.readALS();
+  // === READ BMP180 (Unified API) ===
+  sensors_event_t event;
+  bmp.getEvent(&event);
+  
+  float pressure = 0;
+  float temperature = 0;
+  float altitude = 0;
+  
+  if (event.pressure) {
+    pressure = event.pressure * 100; // Convert hPa to Pascals
+    
+    bmp.getTemperature(&temperature);
+    
+    // Calculate altitude (assuming sea level pressure = 1013.25 hPa)
+    altitude = bmp.pressureToAltitude(1013.25, event.pressure);
+  }
 
-  // Format packet: U:<UV RAW>,L:<Light RAW>
+  // === FORMAT PACKET ===
+  // Example: T:23.45,P:100812,A:12.30
   char packet[64];
   snprintf(packet, sizeof(packet),
-           "U:%lu,L:%lu",
-           uvs, als);
+           "T:%.2f,P:%.0f,A:%.2f",
+           temperature,
+           pressure,
+           altitude);
 
-  // Send packet
+  // === SEND PACKET ===
   rf69.send((uint8_t*)packet, strlen(packet));
   rf69.waitPacketSent();
 
-  delay(960); // ~1s loop time
+  delay(960); // ~1 second total loop time
 }
