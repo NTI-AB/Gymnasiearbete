@@ -16,7 +16,7 @@
 // I2C DEBUG MODE
 // Set to true to scan I2C bus and show detailed info
 // ===============================
-#define I2C_DEBUG true
+#define I2C_DEBUG false
 
 // ===============================
 // RADIO CONFIG
@@ -46,6 +46,10 @@ bool bmp_ok = false;
 bool accel_ok = false;
 bool ltr_ok = false;
 bool rf_ok = false;
+
+// Use your known local altitude (meters) to calibrate BMP sea-level pressure
+float seaLevelhPa = 1013.25;  // fallback if calibration fails
+const float KNOWN_ALT_M = 69.0f;  // REMEMBER: set this to your local height before running
 
 // =============================================
 // FAILSAFE VALUE
@@ -94,11 +98,9 @@ void scanI2C() {
   }
   
   Serial.println("\nCommon I2C Addresses:");
-  Serial.println("  ADXL345: 0x53 (default) or 0x1D");
+  Serial.println("  ADXL345:  0x1D");
   Serial.println("  BMP180:  0x77");
-  Serial.println("  LTR390:  0x53 (default)");
-  Serial.println("\n⚠️  ADXL345 and LTR390 both use 0x53!");
-  Serial.println("   You need to change one address or use I2C multiplexer\n");
+  Serial.println("  LTR390:  0x53");
   Serial.println("========================\n");
 }
 
@@ -122,6 +124,10 @@ void setup() {
   Wire.setClock(100000);  // 100kHz - slower but more stable
   delay(100);
 
+  Serial.print("Reminder: KNOWN_ALT_M is currently set to ");
+  Serial.print(KNOWN_ALT_M);
+  Serial.println(" m. Update it to your local height before flight.");
+
   if (I2C_DEBUG) {
     scanI2C();
   }
@@ -131,6 +137,18 @@ void setup() {
   bmp_ok = bmp.begin();
   if (bmp_ok) {
     Serial.println("OK");
+
+    // Calibrate sea-level pressure using known altitude
+    sensors_event_t calEvt;
+    bmp.getEvent(&calEvt);
+    if (calEvt.pressure) {
+      seaLevelhPa = bmp.seaLevelForAltitude(KNOWN_ALT_M, calEvt.pressure);
+      Serial.print("Calibrated sea-level pressure: ");
+      Serial.print(seaLevelhPa);
+      Serial.println(" hPa");
+    } else {
+      Serial.println("Warning: Calibration skipped (no pressure reading)");
+    }
   } else {
     Serial.println("FAILED");
     Serial.println("  -> Check wiring and I2C address");
@@ -213,12 +231,6 @@ void setup() {
 
   Serial.println("\n=== Initialization Complete ===");
   
-  if (accel_ok && ltr_ok) {
-    Serial.println("⚠️  WARNING: Both ADXL345 and LTR390 initialized!");
-    Serial.println("   This shouldn't work - they share address 0x53");
-    Serial.println("   One may be reading garbage data");
-  }
-  
   Serial.println("\nStarting main loop...\n");
   delay(1000);
 }
@@ -245,8 +257,8 @@ void readBMP(float &tempC, float &pressurePa, float &altM) {
   float t;
   bmp.getTemperature(&t);
   tempC = t;
-  pressurePa = event.pressure * 100;   // hPa → Pa
-  altM = bmp.pressureToAltitude(1013.25, event.pressure);
+  pressurePa = event.pressure * 100;   // hPa to Pa
+  altM = bmp.pressureToAltitude(seaLevelhPa, event.pressure);
 }
 
 // ---- SAFE ADXL345 ----
