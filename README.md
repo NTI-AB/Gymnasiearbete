@@ -56,3 +56,42 @@ This dataset contains environmental and motion data recorded over time during a 
 | 14.974 | 6.27 | 98947 | 1.00 | -0.85 | -13.10 | -1.11 | 87 | 16331 | 406 |
 | 15.374 | 6.23 | 98975 | 0.63 | -0.87 | -13.69 | -1.17 | 95 | 19913 | 407 |
 | 15.773 | 6.20 | 99004 | 0.26 | -0.90 | -14.28 | -1.22 | 102 | 23496 | 409 |
+
+## RSSI Range Test
+
+This dataset shows signal strength (RSSI) and packet loss measured at increasing distances between transmitter (TX) and receiver (RX). Two test runs (T1 and T2) were conducted to observe consistency and environmental effects.
+
+### Columns
+
+| Column | Description |
+|--------|-------------|
+| Distance_m | Distance between TX and RX |
+| T1_RSSI_dBm | Average signal strength (Test 1) |
+| T1_Loss_% | Packet loss percentage (Test 1) |
+| T2_RSSI_dBm | Average signal strength (Test 2) |
+| T2_Loss_% | Packet loss percentage (Test 2) |
+| Event | Notable environmental interference |
+
+### Dataset
+
+| Distance_m | T1_RSSI_dBm | T1_Loss_% | T2_RSSI_dBm | T2_Loss_% | Event |
+|-----------|------------|----------|------------|----------|-------|
+| 10  | -40.0 | 0  | -41.6 | 0  | — |
+| 20  | -48.5 | 0  | -47.3 | 0  | — |
+| 30  | -51.4 | 0  | -53.8 | 0  | — |
+| 40  | -57.0 | 0  | -57.1 | 0  | — |
+| 50  | -55.8 | 0  | -52.8 | 0  | — |
+| 60  | -65.7 | 45 | -56.5 | 0  | Interference (vehicle nearby) |
+| 70  | -56.8 | 0  | -55.2 | 0  | — |
+| 80  | -61.9 | 0  | -60.9 | 0  | — |
+| 90  | -73.7 | 25 | -60.4 | 0  | Passing vehicle |
+| 100 | -64.7 | 0  | -64.5 | 0  | — |
+| 120 | -64.9 | 0  | -73.2 | 25 | Passing vehicle |
+| 140 | -67.1 | 0  | -61.7 | 0  | — |
+| 160 | -74.8 | 25 | -63.1 | 0  | Vehicle between TX/RX |
+| 180 | -70.1 | 0  | -71.5 | 0  | — |
+| 200 | -81.0 | 30 | -80.0 | 30 | Unknown interference |
+| 230 | -71.4 | 0  | -71.2 | 0  | — |
+| 260 | -76.4 | 5  | -71.3 | 0  | — |
+| 300 | -74.3 | 25 | -73.9 | 15 | — |
+
